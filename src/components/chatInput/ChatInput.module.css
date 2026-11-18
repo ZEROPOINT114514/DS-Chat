@@ -326,7 +326,8 @@
   }
 
   &.disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+    color: var(--dsw-alias-label-caption);
+    background: var(--dsw-alias-bg-skeleton);
+    cursor: default;
   }
 }

@@ -9,3 +9,12 @@ build/
 .env.*
 !.env.example
 tmp/
+
+# 发布签名密钥，绝不入库
+android/keystore/
+*.jks
+*.keystore
+*.idsig
+
+# 本地 Android SDK 路径
+android/local.properties

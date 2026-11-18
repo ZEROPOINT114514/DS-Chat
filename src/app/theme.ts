@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { useSettings, type ThemePreference } from '../services/settings.js'
+import { syncSystemBars } from '../services/native/themeBars.js'
 
 export type Theme = 'light' | 'dark'
 
@@ -26,6 +27,8 @@ const syncPageBackground = () => {
   const backgroundColor = getComputedStyle(document.body).backgroundColor
   document.documentElement.style.backgroundColor = backgroundColor
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', backgroundColor)
+  // 原生状态下状态栏、导航栏跟随页面底色，切换主题时一起更新
+  syncSystemBars(document.body.classList.contains('dark'))
 }
 
 /** 同步页面主题、根画布背景和支持 theme-color 的浏览器栏。 */

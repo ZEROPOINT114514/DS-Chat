@@ -71,6 +71,7 @@ export const createConfig = ({
         type: 'javascript/auto',
       },
       { test: /\.(woff2?|ttf)$/, type: 'asset/resource' },
+      { test: /\.(png|webp|svg)$/, type: 'asset/resource' },
     ],
   },
   plugins: [
@@ -82,7 +83,11 @@ export const createConfig = ({
     }),
     new rspack.DefinePlugin({ __API_ORIGIN__: JSON.stringify(apiOrigin) }),
     new rspack.CopyRspackPlugin({
-      patterns: [{ from: path.resolve(root, 'LICENSE'), to: 'LICENSE', toType: 'file' }],
+      patterns: [
+        { from: path.resolve(root, 'LICENSE'), to: 'LICENSE', toType: 'file' },
+        // 应用图标与 Web App Manifest，供安装到桌面/主屏时使用
+        { from: path.resolve(root, 'public'), to: '.', toType: 'dir' },
+      ],
     }),
   ],
   performance: { hints: false },

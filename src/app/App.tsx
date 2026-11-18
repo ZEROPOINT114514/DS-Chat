@@ -10,11 +10,15 @@ import {
   useChatStore,
 } from '../services/chat/store.js'
 import { SearchPanel } from '../components/search/SearchPanel.js'
-import { closeSearchPanel } from '../components/search/searchPanelState.js'
+import { closeSearchPanel, useSearchPanel } from '../components/search/searchPanelState.js'
 import { SessionView } from '../components/session/SessionView.js'
 import { MobileHeader } from '../components/session/MobileHeader.js'
 import { Welcome } from '../components/session/Welcome.js'
-import { ensureApiKey } from '../components/settings/settingsDialogState.js'
+import {
+  closeSettings,
+  ensureApiKey,
+  useSettingsDialog,
+} from '../components/settings/settingsDialogState.js'
 import { SettingsDialog } from '../components/settings/SettingsDialog.js'
 import { Toast } from '../components/base/Toast.js'
 import { showToast } from '../components/base/toastState.js'
@@ -22,7 +26,9 @@ import { onUploadNotice } from '../services/attachments.js'
 import { Button } from '../components/base/Button.js'
 import { stopReadAloud } from '../services/speech/readAloud.js'
 import { CollapsedSider } from '../components/sider/CollapsedSider.js'
-import { closeMobileSider } from '../components/sider/mobileSiderState.js'
+import { closeMobileSider, useMobileSider } from '../components/sider/mobileSiderState.js'
+import { ImagePreview } from '../components/files/ImagePreview.js'
+import { closeImagePreview, useImagePreview } from '../services/imagePreview.js'
 import { MobileSider, Sider } from '../components/sider/Sider.js'
 import styles from './App.module.css'
 
@@ -71,6 +77,33 @@ export const App = () => {
     void initChat()
     // 首次打开先在设置里输入 API Key
     ensureApiKey()
+  }, [])
+
+  // 系统返回键：先关最上层浮层；没有浮层时返回 false，由原生按退出处理
+  useEffect(() => {
+    const handleBack = () => {
+      if (useImagePreview.getState().url) {
+        closeImagePreview()
+        return true
+      }
+      if (useSettingsDialog.getState().open) {
+        closeSettings()
+        return true
+      }
+      if (useSearchPanel.getState().entry) {
+        closeSearchPanel()
+        return true
+      }
+      if (useMobileSider.getState().open) {
+        closeMobileSider()
+        return true
+      }
+      return false
+    }
+    window.__dsHandleBack = handleBack
+    return () => {
+      delete window.__dsHandleBack
+    }
   }, [])
 
   return (
@@ -133,6 +166,7 @@ export const App = () => {
         <SearchPanel />
       </div>
       <SettingsDialog />
+      <ImagePreview />
       <Toast />
     </>
   )

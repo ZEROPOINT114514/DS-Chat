@@ -1,6 +1,6 @@
 {
-  "name": "chat-demo",
-  "version": "0.1.1",
+  "name": "ds-chat",
+  "version": "1.0.2",
   "description": "基于 DeepSeek API 的静态聊天示例。",
   "license": "MIT",
   "private": true,
@@ -13,6 +13,9 @@
     "format": "oxfmt --write ."
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
     "@types/katex": "^0.16.5",
     "@types/mdast": "~4.0.3",
     "@types/prismjs": "^1.26.1",

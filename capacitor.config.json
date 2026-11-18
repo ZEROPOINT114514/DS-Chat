@@ -1,0 +1,12 @@
+{
+  "appId": "icu.dschat.app",
+  "appName": "DS-Chat",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#ffffff",
+    "webContentsDebuggingEnabled": false
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -1,0 +1,42 @@
+/* DS-Chat 外观层：品牌色与移动端细节对齐官方 App */
+
+body {
+  /* 官方品牌蓝 #4D6BFE，深浅色保持同一套色阶 */
+  --dsw-static-blue-500: rgb(77, 107, 254);
+  --dsw-static-blue-450: rgb(102, 129, 255);
+  --dsw-static-blue-400: rgb(128, 151, 255);
+  --dsw-static-blue-300: rgb(160, 178, 255);
+  --dsw-static-blue-200: rgb(205, 217, 255);
+  --dsw-static-blue-100: rgb(226, 234, 255);
+  --dsw-static-blue-50: rgb(239, 243, 255);
+  --ds-chat-bubble-radius: 22px;
+
+  /* 输入卡片浅灰底，贴近官方 App 的输入区 */
+  --dsw-specific-input-major: rgb(246, 247, 249);
+}
+
+body[data-ds-dark-theme] {
+  --dsw-specific-input-major: rgb(44, 44, 46);
+}
+
+@media not all and (min-width: 768px) {
+  /* 移动端按原生应用处理：无滚动条、无长按菜单、无可缩放交互 */
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  body {
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+
+  /* 输入区、消息区允许选中文本，其余界面元素不选中 */
+  button,
+  a,
+  img,
+  [role='button'] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}

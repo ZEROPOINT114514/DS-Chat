@@ -28,6 +28,7 @@ import {
   type ThemePreference,
 } from '../../services/settings.js'
 import { useTranslate, type TranslationKey, type TranslationMessage } from '../../i18n/index.js'
+import { saveFileNatively } from '../../services/native/fileSaver.js'
 import { Button } from '../base/Button.js'
 import { Modal } from '../base/Modal.js'
 import { Select } from '../base/Select.js'
@@ -524,6 +525,12 @@ const ExportHistory = ({ disabled }: { disabled: boolean }) => {
     setStatus(null)
     try {
       const { name, blob } = await exportHistory()
+      // 安卓 WebView 没有下载管理器，a[download] 不会触发任何行为，改走原生保存
+      const savedPath = await saveFileNatively(name, blob, 'application/zip')
+      if (savedPath) {
+        setStatus({ key: 'historyExportSaved', params: { path: savedPath } })
+        return
+      }
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url

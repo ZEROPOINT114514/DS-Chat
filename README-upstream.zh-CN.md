@@ -1,6 +1,6 @@
 # chat-demo
 
-[English](README.md) | 简体中文
+[English](README-upstream.md) | 简体中文
 
 基于 DeepSeek API 的静态聊天示例。无需应用后端，浏览器直接请求配置的 API 服务。
 
