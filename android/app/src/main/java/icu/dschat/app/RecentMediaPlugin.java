@@ -1,5 +1,6 @@
 package icu.dschat.app;
 
+import android.Manifest;
 import android.content.ContentUris;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -9,21 +10,55 @@ import android.provider.MediaStore;
 import android.util.Size;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 /** 相册最近照片：缩略图写进缓存供面板显示，选中时把原图复制到缓存再交给网页。 */
-@CapacitorPlugin(name = "RecentMedia")
+@CapacitorPlugin(
+        name = "RecentMedia",
+        permissions = {
+            // Android 13+ 用细分媒体权限，12 及以下退回读外部存储
+            @Permission(alias = "images", strings = {"android.permission.READ_MEDIA_IMAGES"}),
+            @Permission(alias = "storage", strings = {Manifest.permission.READ_EXTERNAL_STORAGE})
+        })
 public class RecentMediaPlugin extends Plugin {
+
+    private String permissionAlias() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ? "images" : "storage";
+    }
 
     @PluginMethod
     public void list(PluginCall call) {
+        String alias = permissionAlias();
+        if (getPermissionState(alias) != PermissionState.GRANTED) {
+            requestPermissionForAlias(alias, call, "permissionCallback");
+            return;
+        }
+        respond(call);
+    }
+
+    @PermissionCallback
+    private void permissionCallback(PluginCall call) {
+        if (getPermissionState(permissionAlias()) == PermissionState.GRANTED) {
+            respond(call);
+            return;
+        }
+        // 拒绝授权时返回空列表，面板只剩三个入口
+        JSObject ret = new JSObject();
+        ret.put("items", new JSArray());
+        call.resolve(ret);
+    }
+
+    private void respond(PluginCall call) {
         int limit = Math.max(0, Math.min(call.getInt("limit", 8), 20));
         JSArray items = new JSArray();
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || limit == 0) {
