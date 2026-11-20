@@ -90,7 +90,19 @@ export const useChatStore = create<ChatState>(() => ({
 const { getState: get, setState: set } = useChatStore
 
 const sortSessions = (sessions: SessionSummary[]) =>
-  [...sessions].sort((a, b) => b.updatedAt - a.updatedAt)
+  [...sessions].sort((a, b) => {
+    // 置顶区按置顶时间倒序，其后按最近更新时间
+    if (a.pinnedAt && b.pinnedAt) {
+      return b.pinnedAt - a.pinnedAt
+    }
+    if (a.pinnedAt) {
+      return -1
+    }
+    if (b.pinnedAt) {
+      return 1
+    }
+    return b.updatedAt - a.updatedAt
+  })
 
 const getSession = (id: string) => {
   const cache = get().sessionCache
@@ -103,7 +115,10 @@ const getStreamController = (id: string) => {
 }
 
 const sameSummary = (a: SessionSummary, b: SessionSummary) =>
-  a.title === b.title && a.createdAt === b.createdAt && a.updatedAt === b.updatedAt
+  a.title === b.title &&
+  a.createdAt === b.createdAt &&
+  a.updatedAt === b.updatedAt &&
+  a.pinnedAt === b.pinnedAt
 
 const sessionAccess = new Map<string, number>()
 const unsavedSessions = new Set<string>()
@@ -445,6 +460,32 @@ export const newChat = () => {
     set({ activeId: null })
     trimSessionCache()
   }
+}
+
+/** 置顶 / 取消置顶：先改内存列表，再落库；多个会话一次处理（多选场景） */
+export const pinSessions = (ids: string[], pinned: boolean) => {
+  if (ids.length === 0) {
+    return
+  }
+  const pinnedAt = Date.now()
+  const targets = new Set(ids)
+  set((state) => ({
+    sessions: sortSessions(
+      state.sessions.map((session) => {
+        if (!targets.has(session.id)) {
+          return session
+        }
+        const next: SessionSummary = { ...session }
+        if (pinned) {
+          next.pinnedAt = pinnedAt
+        } else {
+          delete next.pinnedAt
+        }
+        return next
+      })
+    ),
+  }))
+  void db.setSessionsPinned(ids, pinned).catch(db.reportStorageError('pin sessions'))
 }
 
 export const selectSession = (id: string) => {

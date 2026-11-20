@@ -523,3 +523,105 @@ export const IconToastError16 = () => (
     />
   </svg>
 )
+
+/** 侧边栏置顶（图钉） */
+export const IconPinOutline16 = () => (
+  <svg width={16} height={16} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M6 1.75h4M8 1.75v4.4L10.9 8.6H5.1L8 6.15V1.75M8 8.6v5.65"
+      stroke="currentColor"
+      strokeWidth={1.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
+/** 侧边栏多选 */
+export const IconMultiSelectOutline16 = () => (
+  <svg width={16} height={16} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1.75" y="2.75" width="3.5" height="3.5" rx="1.2" stroke="currentColor" strokeWidth={1.4} />
+    <rect x="1.75" y="9.75" width="3.5" height="3.5" rx="1.2" stroke="currentColor" strokeWidth={1.4} />
+    <path d="M7.75 4.5h6.5M7.75 11.5h6.5" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" />
+  </svg>
+)
+
+/** 附件面板：拍照 */
+export const IconCameraOutline24 = () => (
+  <svg width={24} height={24} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M4.4 7.2h2.3l1.3-2.1h7.9l1.4 2.1h2.3c.9 0 1.6.7 1.6 1.6v9.1c0 .9-.7 1.6-1.6 1.6H4.4c-.9 0-1.6-.7-1.6-1.6V8.8c0-.9.7-1.6 1.6-1.6Z"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinejoin="round"
+    />
+    <circle cx="12" cy="13.2" r="3.6" stroke="currentColor" strokeWidth={1.6} />
+  </svg>
+)
+
+/** 附件面板：相册 */
+export const IconImageOutline24 = () => (
+  <svg width={24} height={24} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3.2" y="4.4" width="17.6" height="15.2" rx="3" stroke="currentColor" strokeWidth={1.6} />
+    <circle cx="8.6" cy="9.6" r="1.7" stroke="currentColor" strokeWidth={1.5} />
+    <path
+      d="M4 17.4l4.6-4.2c.7-.6 1.7-.6 2.4 0l3.5 3.2M13.4 15.2l2.1-1.9c.7-.6 1.7-.6 2.4 0l2.1 1.9"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
+/** 附件面板：文件 */
+export const IconFileOutline24 = () => (
+  <svg width={24} height={24} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M13.4 3.4H7.6c-1.2 0-2.2 1-2.2 2.2v12.8c0 1.2 1 2.2 2.2 2.2h8.8c1.2 0 2.2-1 2.2-2.2V8.6l-5.2-5.2Z"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinejoin="round"
+    />
+    <path d="M13.2 3.6v4.6c0 .6.5 1.1 1.1 1.1h4.5" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" />
+  </svg>
+)
+
+/** 图片编辑器：裁剪 */
+export const IconCropOutline20 = () => (
+  <svg width={20} height={20} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M6 1.5v12.5h12.5M1.5 6H14M14 18.5V6H1.5"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
+/** 图片编辑器：旋转 */
+export const IconRotateOutline20 = () => (
+  <svg width={20} height={20} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M3.2 10a6.8 6.8 0 1 0 2.1-4.9M3.2 3.2v4.2h4.2"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
+/** 图片编辑器：撤销 */
+export const IconUndoOutline20 = () => (
+  <svg width={20} height={20} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M6.4 5.2H11a4.8 4.8 0 0 1 0 9.6H5.4M6.4 5.2l3 3M6.4 5.2l3-3"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)

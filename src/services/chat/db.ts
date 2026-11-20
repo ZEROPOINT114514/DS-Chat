@@ -123,6 +123,36 @@ export const renameSession = async (id: string, title: string): Promise<void> =>
   ])
 }
 
+/** 置顶 / 取消置顶：只改 pinnedAt，不影响消息与 updatedAt 排序 */
+export const setSessionsPinned = async (ids: string[], pinned: boolean): Promise<void> => {
+  const tx = (await getDB()).transaction(['sessions', 'sessionSummaries'], 'readwrite')
+  const pinnedAt = Date.now()
+  await Promise.all([
+    (async () => {
+      try {
+        for (const id of ids) {
+          const session = await tx.objectStore('sessions').get(id)
+          if (!session) {
+            continue
+          }
+          const next: Session = { ...session }
+          if (pinned) {
+            next.pinnedAt = pinnedAt
+          } else {
+            delete next.pinnedAt
+          }
+          await tx.objectStore('sessions').put(next)
+          await tx.objectStore('sessionSummaries').put(storedSummary(next))
+        }
+      } catch (error) {
+        abortTransaction(tx)
+        throw error
+      }
+    })(),
+    tx.done,
+  ])
+}
+
 /** 删除会话，仅清理已无会话引用的本地原件；远端文件不删。 */
 export const deleteSession = async (sessionId: string): Promise<void> => {
   const tx = (await getDB()).transaction(['sessions', 'sessionSummaries', 'files'], 'readwrite')

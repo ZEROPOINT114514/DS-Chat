@@ -5,6 +5,7 @@ import { useIsMobile, useMobileViewport, usePreventPageScroll } from './viewport
 import {
   bindChatPersistence,
   initChat,
+  newChat,
   retrySaveSessions,
   selectSession,
   useChatStore,
@@ -28,7 +29,9 @@ import { stopReadAloud } from '../services/speech/readAloud.js'
 import { CollapsedSider } from '../components/sider/CollapsedSider.js'
 import { closeMobileSider, useMobileSider } from '../components/sider/mobileSiderState.js'
 import { ImagePreview } from '../components/files/ImagePreview.js'
-import { closeImagePreview, useImagePreview } from '../services/imagePreview.js'
+import { closeImagePreview, isPreviewOpen } from '../services/imagePreview.js'
+import { addDraftFiles } from '../services/chat/drafts.js'
+import { consumeSharedFile } from '../services/native/shareTarget.js'
 import { MobileSider, Sider } from '../components/sider/Sider.js'
 import styles from './App.module.css'
 
@@ -82,7 +85,7 @@ export const App = () => {
   // 系统返回键：先关最上层浮层；没有浮层时返回 false，由原生按退出处理
   useEffect(() => {
     const handleBack = () => {
-      if (useImagePreview.getState().url) {
+      if (isPreviewOpen()) {
         closeImagePreview()
         return true
       }
@@ -103,6 +106,41 @@ export const App = () => {
     window.__dsHandleBack = handleBack
     return () => {
       delete window.__dsHandleBack
+    }
+  }, [])
+
+  // 其他应用「分享 / 用 DS-Chat 打开」进来的文件：新建会话并挂到输入框
+  useEffect(() => {
+    let busy = false
+    const run = async () => {
+      if (busy) {
+        return
+      }
+      busy = true
+      try {
+        const file = await consumeSharedFile()
+        if (file) {
+          newChat()
+          const error = addDraftFiles(null, [file], useSettings.getState().apiKey ?? '')
+          if (error) {
+            showToast(error)
+          }
+        }
+      } finally {
+        busy = false
+      }
+    }
+    window.dsShareArrived = () => void run()
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void run()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    void run()
+    return () => {
+      delete window.dsShareArrived
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [])
 

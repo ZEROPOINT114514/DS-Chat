@@ -142,7 +142,7 @@ export const MessageFile = ({
         className={clsx(styles.image, styles.imageThumb)}
         title={file.name}
         aria-label={file.name}
-        onClick={() => openImagePreview(url, file.name)}
+        onClick={() => void openImagePreview(file.id)}
       >
         {preview}
       </button>

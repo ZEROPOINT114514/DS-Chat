@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { memo, useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   IconGlobeLanguageOutline14,
   IconPaperclipOutline16,
@@ -28,6 +28,9 @@ import { DragMask, useFileDrop } from './DragMask.js'
 import { showToast } from '../base/toastState.js'
 import { ACCEPT, useUploads } from '../../services/attachments.js'
 import { DraftAttachments } from './DraftAttachments.js'
+import { AttachmentSheet } from './AttachmentSheet.js'
+import { ImageEditor } from '../media/ImageEditor.js'
+import { capturePhoto, supportsNativeCamera } from '../../services/native/camera.js'
 import { useVoiceInput } from './useVoiceInput.js'
 import { VoiceButton } from './VoiceButton.js'
 import { Spectrum } from './Spectrum.js'
@@ -100,6 +103,28 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
     [sessionId]
   )
   const dragging = useFileDrop(acceptFiles)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [shot, setShot] = useState<{ blob: Blob; name: string } | null>(null)
+
+  /** 调系统相机：照片留在内存，拍完直接进圈画编辑器 */
+  const openCamera = () => {
+    if (!supportsNativeCamera()) {
+      return
+    }
+    void capturePhoto()
+      .then((photo) => {
+        if (photo) {
+          setShot(photo)
+        }
+      })
+      .catch((error: unknown) => {
+        showToast({
+          key: 'cameraFailed',
+          params: { message: error instanceof Error ? error.message : String(error) },
+          type: 'error',
+        })
+      })
+  }
 
   /** 转写结果插入到光标处，并把光标移到插入内容之后 */
   const voice = useVoiceInput((transcript) => {
@@ -247,7 +272,11 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
             icon={<IconPaperclipOutline16 />}
             tooltip={t('uploadFile')}
             disabled={importingHistory}
-            onClick={() => ensureApiKey() && fileInputRef.current?.click()}
+            onClick={() => {
+              if (ensureApiKey()) {
+                setSheetOpen(true)
+              }
+            }}
           />
           <input
             ref={fileInputRef}
@@ -286,6 +315,24 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
         </div>
       </div>
       {dragging ? <DragMask /> : null}
+      <AttachmentSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onFiles={acceptFiles}
+        onCamera={supportsNativeCamera() ? openCamera : null}
+        onCapturedFile={(file) => setShot({ blob: file, name: file.name })}
+      />
+      {shot ? (
+        <ImageEditor
+          blob={shot.blob}
+          name={shot.name}
+          onCancel={() => setShot(null)}
+          onDone={(file) => {
+            acceptFiles([file])
+            setShot(null)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

@@ -1,14 +1,10 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 1050;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  padding: calc(env(safe-area-inset-top) + 16px) 12px calc(env(safe-area-inset-bottom) + 16px);
-  background-color: rgba(0, 0, 0, 0.92);
-  overscroll-behavior: contain;
+  flex-direction: column;
+  background-color: #000;
   animation: fade-in 0.16s var(--ds-ease-in-out);
 }
 
@@ -18,41 +14,100 @@
   }
 }
 
-/* 关键：不按原图尺寸铺开，长边最多到可用区域，短边等比缩放 */
-.image {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  border-radius: 12px;
-  user-select: none;
-  -webkit-user-drag: none;
+.topBar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: calc(52px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 8px 0;
+  color: #fff;
 }
 
-.close {
-  position: absolute;
-  top: calc(env(safe-area-inset-top) + 8px);
-  right: 8px;
+.iconButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: none;
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.92);
-  background-color: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  background: none;
   cursor: pointer;
 
   svg {
     width: 20px;
     height: 20px;
   }
+
+  &:active {
+    background-color: rgba(255, 255, 255, 0.14);
+  }
 }
 
-.close:active {
-  background-color: rgba(255, 255, 255, 0.24);
+.counter {
+  flex: 1;
+  font-size: 14px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transform-origin: center;
+  translate: -50% -50%;
+  transition: transform 0.22s var(--ds-ease-in-out);
+  will-change: transform;
+  -webkit-user-drag: none;
+}
+
+/* 拖动时不加过渡，手感才跟手 */
+.stageDragging .image {
+  transition: none;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 10px 0 calc(14px + env(safe-area-inset-bottom));
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.32);
+}
+
+.dotActive {
+  background-color: #fff;
 }

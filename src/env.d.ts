@@ -14,6 +14,8 @@ declare module '*.png' {
 /** 原生返回键回调：返回 true 表示网页已消费（关闭浮层），false 交给系统退出 */
 interface Window {
   __dsHandleBack?: () => boolean
+  /** 原生收到新的分享 / 打开请求时调用，让网页去取附件 */
+  dsShareArrived?: () => void
 }
 
 /** 公开 API 的地址，见 rspack.config.ts 的 createConfig */

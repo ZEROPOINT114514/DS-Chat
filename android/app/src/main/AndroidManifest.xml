@@ -25,6 +25,27 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- 其他应用「分享」到 DS-Chat：图片、PDF、文本 -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+
+            <!-- 「选择其他应用打开」：content:// 与 file:// 的常见文档类型 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:mimeType="image/*" />
+                <data android:scheme="content" android:mimeType="application/pdf" />
+                <data android:scheme="content" android:mimeType="text/plain" />
+                <data android:scheme="file" android:mimeType="image/*" />
+                <data android:scheme="file" android:mimeType="application/pdf" />
+            </intent-filter>
+
         </activity>
 
         <provider
@@ -41,6 +62,7 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />

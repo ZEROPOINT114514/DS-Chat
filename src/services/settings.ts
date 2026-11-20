@@ -17,6 +17,8 @@ type Settings = {
   thinking: boolean
   search: boolean
   siderCollapsed: boolean
+  /** 思考结束后自动折叠思考内容 */
+  autoCollapseThinking: boolean
 }
 
 const KEYS = {
@@ -28,6 +30,7 @@ const KEYS = {
   thinking: 'chat-demo:thinking',
   search: 'chat-demo:search',
   siderCollapsed: 'chat-demo:sider-collapsed',
+  autoCollapseThinking: 'chat-demo:auto-collapse-thinking',
 } as const
 
 const read = (key: string) => {
@@ -96,6 +99,8 @@ export const useSettings = create<Settings>(() => ({
   thinking: read(KEYS.thinking) === 'true',
   search: read(KEYS.search) === 'true',
   siderCollapsed: read(KEYS.siderCollapsed) === 'true',
+  // 默认开启：没有保存过时按 true 处理
+  autoCollapseThinking: read(KEYS.autoCollapseThinking) !== 'false',
 }))
 
 export const setLocale = (locale: Locale) => {
@@ -137,4 +142,9 @@ export const setSearch = (search: boolean) => {
 export const setSiderCollapsed = (siderCollapsed: boolean) => {
   write(KEYS.siderCollapsed, String(siderCollapsed))
   useSettings.setState({ siderCollapsed })
+}
+
+export const setAutoCollapseThinking = (autoCollapseThinking: boolean) => {
+  write(KEYS.autoCollapseThinking, String(autoCollapseThinking))
+  useSettings.setState({ autoCollapseThinking })
 }

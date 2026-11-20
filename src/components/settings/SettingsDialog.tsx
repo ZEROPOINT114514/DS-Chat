@@ -20,6 +20,7 @@ import { useChatStore } from '../../services/chat/store.js'
 import { regionCodes, getRegionName, provinces } from '../../services/location.js'
 import {
   isChineseBrowser,
+  setAutoCollapseThinking,
   setLocale,
   setLocation,
   setThemePreference,
@@ -98,6 +99,7 @@ const SettingsContent = () => {
           {section === 'general' ? (
             <>
               <ThemeSetting />
+              <ThinkingCollapseSetting />
               <LocaleSetting />
               <TtsVoiceSetting />
               <LocationSetting />
@@ -204,6 +206,31 @@ const useHistoryDelete = () => {
     },
     confirm,
   }
+}
+
+/** 思考内容自动折叠：默认开启，关闭后思考过程始终保持展开 */
+const ThinkingCollapseSetting = () => {
+  const t = useTranslate()
+  const autoCollapse = useSettings((state) => state.autoCollapseThinking)
+  return (
+    <SettingCell
+      label={t('thinkingAutoCollapse')}
+      description={t('thinkingAutoCollapseDescription')}
+      status={null}
+      action={
+        <button
+          type="button"
+          role="switch"
+          aria-checked={autoCollapse}
+          aria-label={t('thinkingAutoCollapse')}
+          className={clsx(styles.switch, autoCollapse && styles.switchOn)}
+          onClick={() => setAutoCollapseThinking(!autoCollapse)}
+        >
+          <span className={styles.switchThumb} />
+        </button>
+      }
+    />
+  )
 }
 
 const LocationSetting = () => {

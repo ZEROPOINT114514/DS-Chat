@@ -1,7 +1,14 @@
 import clsx from 'clsx'
 import { memo, useState } from 'react'
 import { useTranslate } from '../../i18n/index.js'
-import { IconEditOutline16, IconEllipsisOutline16, IconTrashOutline16 } from '../base/icons.js'
+import {
+  IconCheckOutline16,
+  IconEditOutline16,
+  IconEllipsisOutline16,
+  IconMultiSelectOutline16,
+  IconPinOutline16,
+  IconTrashOutline16,
+} from '../base/icons.js'
 import { renameSession, selectSession } from '../../services/chat/store.js'
 import type { SessionSummary } from '../../services/chat/types.js'
 import { IconButton } from '../base/IconButton.js'
@@ -12,11 +19,23 @@ import styles from './SessionItem.module.css'
 export const SessionItem = memo(function SessionItem({
   session,
   active,
+  pinned,
+  selectMode,
+  selected,
   onDelete,
+  onTogglePin,
+  onEnterSelect,
+  onToggleSelect,
 }: {
   session: SessionSummary
   active: boolean
+  pinned: boolean
+  selectMode: boolean
+  selected: boolean
   onDelete: () => void
+  onTogglePin: () => void
+  onEnterSelect: () => void
+  onToggleSelect: () => void
 }) {
   const t = useTranslate()
   const [editing, setEditing] = useState(false)
@@ -47,6 +66,23 @@ export const SessionItem = memo(function SessionItem({
     )
   }
 
+  if (selectMode) {
+    return (
+      <div
+        className={clsx(styles.item, styles.selectable, selected && styles.selected)}
+        onClick={onToggleSelect}
+        role="checkbox"
+        aria-checked={selected}
+        aria-label={displayTitle}
+      >
+        <span className={clsx(styles.check, selected && styles.checked)}>
+          {selected ? <IconCheckOutline16 /> : null}
+        </span>
+        <div className={styles.title}>{displayTitle}</div>
+      </div>
+    )
+  }
+
   return (
     <div
       className={clsx(styles.item, active && styles.active)}
@@ -64,6 +100,18 @@ export const SessionItem = memo(function SessionItem({
               label: t('sessionItemMenuRenameOption'),
               icon: <IconEditOutline16 />,
               onSelect: () => setEditing(true),
+            },
+            {
+              key: 'pin',
+              label: pinned ? t('siderUnpin') : t('siderPin'),
+              icon: <IconPinOutline16 />,
+              onSelect: onTogglePin,
+            },
+            {
+              key: 'select',
+              label: t('siderMultiSelect'),
+              icon: <IconMultiSelectOutline16 />,
+              onSelect: onEnterSelect,
             },
             {
               key: 'delete',

@@ -5,7 +5,7 @@ DeepSeek 移动端客户端。界面按 DeepSeek 官方 Android App 重做，功
 
 ## 它是什么
 
-- **一个真的能用的 App**：安装包 `DS-Chat-1.0.2.apk`，Android 6.0+ 直接安装，不需要电脑、不需要浏览器。
+- **一个真的能用的 App**：安装包 `DS-Chat-1.1.0.apk`，Android 6.0+ 直接安装，不需要电脑、不需要浏览器。
 - **界面**：品牌蓝 `#4D6BFE`、鲸鱼标识、"我是 DeepSeek，很高兴见到你！"首页、气泡消息、输入卡片、
   深度思考 / 智能搜索胶囊按钮、顶栏 ☰ + 居中标题 + 新建对话，与官方 App 的移动端布局对齐。
 - **功能**：完整保留 chat-demo 的能力（见下），不是砍版。
@@ -20,10 +20,14 @@ DeepSeek 移动端客户端。界面按 DeepSeek 官方 Android App 重做，功
 
 | 模块 | 能力 |
 | --- | --- |
-| 会话 | 多会话、自动标题、重命名、删除、置顶分组 |
+| 会话 | 多会话、自动标题、重命名、删除、置顶、多选批量置顶/删除、按时间分组 |
+| 搜索 | 侧边栏搜索历史对话内容，命中关键词高亮，点结果直接跳转会话 |
 | 消息 | 流式输出、停止生成、重新生成、编辑提问、消息分支切换 |
 | 推理与检索 | 深度思考（可折叠、显示用时）、智能搜索、链接阅读、来源引用与悬浮卡片 |
-| 附件 | 上传 / 拖拽 / 粘贴图片与文档、文件卡片、失败重试 |
+| 附件 | 上传 / 拖拽 / 粘贴图片与文档、文件卡片、失败重试；附件面板「拍照 / 相册 / 文件」三入口，附最近照片条 |
+| 拍照 | 系统相机拍照（不写入相册）、拍完进编辑器：蓝色涂鸦圈画、旋转、裁剪后直接提问 |
+| 图片 | 站内查看：双指缩放、双击放大、左右滑动切换、裁剪、保存到「下载/DS-Chat/」 |
+| 系统集成 | 其他应用「分享」或「用 DS-Chat 打开」文件时，新建会话并自动挂为附件 |
 | 语音 | 录音输入（移动端实时频谱）、回复朗读 |
 | 渲染 | Markdown、代码高亮与一键复制、KaTeX 公式、Mermaid 图表 |
 | 外观 | 浅色 / 深色 / 跟随系统、中英文切换、移动端与桌面端自适应 |
@@ -32,7 +36,7 @@ DeepSeek 移动端客户端。界面按 DeepSeek 官方 Android App 重做，功
 ## 安装
 
 ```text
-adb install -r DS-Chat-1.0.2.apk
+adb install -r DS-Chat-1.1.0.apk
 ```
 
 或把 APK 传到手机点击安装（需允许"安装未知来源应用"）。
@@ -55,7 +59,7 @@ cd android
 $ANDROID_HOME/build-tools/34.0.0/zipalign -p 4 app-release-unsigned.apk aligned.apk
 $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
   --ks android/keystore/release.jks \
-  --out DS-Chat-1.0.2.apk aligned.apk
+  --out DS-Chat-1.1.0.apk aligned.apk
 ```
 
 签名密钥自己生成、自己保管，**不在仓库里**：
@@ -81,14 +85,24 @@ android/               Capacitor 生成的 Android 工程
   keystore/             发布签名（本地保留，已 gitignore）
 ```
 
-## 原生桥接（1.0.1 起）
+## 原生桥接
 
-WebView 壳补了两个本地插件，源码在 `android/app/src/main/java/icu/dschat/app/`：
+WebView 壳补了五个本地插件，源码在 `android/app/src/main/java/icu/dschat/app/`：
 
 | 插件 | 作用 | Web 侧调用点 |
 | --- | --- | --- |
 | `ThemeBars` | 用页面实际底色设置状态栏、导航栏颜色，并按深浅色切换图标明暗 | `src/services/native/themeBars.ts`，由 `src/app/theme.ts` 在主题变更时触发 |
-| `FileSaver` | 把字节写入系统「下载/DS-Chat/」，解决 WebView 无下载管理器的问题 | `src/services/native/fileSaver.ts`，由设置页的导出动作调用 |
+| `FileSaver` | 把字节写入系统「下载/DS-Chat/」，解决 WebView 无下载管理器的问题 | `src/services/native/fileSaver.ts`，导出与图片保存共用 |
+| `Camera` | `ACTION_IMAGE_CAPTURE` 拍照到应用缓存，读成 Blob 后立即删除，不进系统相册 | `src/services/native/camera.ts`，附件面板「拍照」 |
+| `RecentMedia` | 用 MediaStore 取最近照片缩略图；选中时把原图复制到缓存再交给网页 | `src/services/native/recentMedia.ts` |
+| `ShareTarget` | 接收 `ACTION_SEND` / `ACTION_VIEW` 传来的文件，复制到缓存等网页取走 | `src/services/native/shareTarget.ts`，由 `App.tsx` 建新会话并挂附件 |
+
+图片编辑与预览：`src/components/media/ImageEditor.tsx` 负责蓝色涂鸦 + 裁剪（画布按屏幕坐标合成，
+裁剪框所见即所得），`src/components/files/ImagePreview.tsx` 负责缩放、滑动与保存；
+照片编辑结果会作为新附件加入输入框，不覆盖原图。
+
+设置里的「思考内容自动折叠」写在 `src/services/settings.ts`，默认开启；
+`ReplyArea` 在流式结束的瞬间收起思考块，历史消息进入时也按该设置收起。
 
 返回键在 `MainActivity.onBackPressed` 里先用 `evaluateJavascript` 问网页
 `window.__dsHandleBack()`：网页关掉最上层浮层（图片预览 → 设置 → 搜索 → 侧边栏）就返回 true
