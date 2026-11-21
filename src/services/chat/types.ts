@@ -23,6 +23,11 @@ export type FileAttachment = {
   isImage: boolean
   /** 具体 MIME；导入时没有原件或无法识别的为空字符串，不影响图片身份。 */
   mimeType: string
+  /**
+   * 上传前已检查过图片长边，可复用 serverId。
+   * 旧版本或导入的记录没有该标记，重发前会重新检查一次。
+   */
+  imageSizeChecked?: boolean
 }
 
 /** 本地消息的分支关系；字段缺省时按线性消息列表处理。 */

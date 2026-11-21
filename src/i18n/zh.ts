@@ -171,6 +171,10 @@ export const zh = {
   latestReminderLanguage: '中文',
   settingsLocaleZhCN: '简体中文',
   settingsLocaleEnUS: 'English',
+  sendHint: '发送（Ctrl + Enter）',
+  historyProgressPreparing: '正在准备…',
+  historyProgressWriting: '正在写入文件',
+  historyProgressBusy: '历史数据处理中，完成前已停用相关操作',
   // 附件面板
   attachSheetPhoto: '拍照',
   attachSheetAlbum: '相册',

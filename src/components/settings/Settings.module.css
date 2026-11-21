@@ -474,3 +474,35 @@
 .switchOn .switchThumb {
   transform: translateX(18px);
 }
+
+/* 历史数据处理进度条 */
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.progressTrack {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background-color: var(--dsw-alias-bg-skeleton);
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 2px;
+  background-color: var(--dsw-alias-brand-primary);
+  transition: width 0.2s linear;
+}
+
+.progressMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+}

@@ -206,7 +206,11 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
             }
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+            if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
+              return
+            }
+            // Enter / Shift + Enter 都是换行；Ctrl / ⌘ + Enter 才发送
+            if (event.ctrlKey || event.metaKey) {
               event.preventDefault()
               send()
             }
@@ -306,6 +310,7 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
               type="button"
               className={clsx(styles.sendButton, !canSend && styles.disabled)}
               aria-label={t('send')}
+              title={t('sendHint')}
               aria-disabled={!canSend}
               onClick={send}
             >

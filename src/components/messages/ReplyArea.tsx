@@ -286,24 +286,26 @@ const ToolRow = ({
   </div>
 )
 
-const PageLink = ({ page, failedTip }: { page: PageItem; failedTip?: string }) => (
-  <span
-    className={clsx(styles.page, page.status === 'failed' ? styles.pageFailed : styles.pageDone)}
-  >
-    {page.status === 'failed' ? (
-      <Tooltip content={failedTip}>
-        <span className={styles.pageText}>{page.title}</span>
-      </Tooltip>
-    ) : (
-      <a className={styles.pageText} href={page.url} target="_blank" rel="noreferrer">
-        {page.title}
-      </a>
-    )}
-    <span className={styles.pageIcon}>
-      <IconRightUpOutline14 />
+const PageLink = ({ page, failedTip }: { page: PageItem; failedTip?: string }) => {
+  // 没有可用的 HTTP(S) 地址时只显示标题，不渲染成链接
+  const unavailable = page.status === 'failed' || !page.url
+  return (
+    <span className={clsx(styles.page, unavailable ? styles.pageFailed : styles.pageDone)}>
+      {unavailable ? (
+        <Tooltip content={failedTip}>
+          <span className={styles.pageText}>{page.title}</span>
+        </Tooltip>
+      ) : (
+        <a className={styles.pageText} href={page.url} target="_blank" rel="noreferrer">
+          {page.title}
+        </a>
+      )}
+      <span className={styles.pageIcon}>
+        <IconRightUpOutline14 />
+      </span>
     </span>
-  </span>
-)
+  )
+}
 
 /** 边想边搜打开的网页：「浏览 N 个页面」+ 最多 5 个页面 */
 const OpenRow = ({

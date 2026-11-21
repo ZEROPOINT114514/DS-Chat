@@ -180,6 +180,10 @@ export const en = {
   latestReminderLanguage: 'English',
   settingsLocaleZhCN: 'Simplified Chinese',
   settingsLocaleEnUS: 'English',
+  sendHint: 'Send (Ctrl + Enter)',
+  historyProgressPreparing: 'Preparing…',
+  historyProgressWriting: 'Writing file',
+  historyProgressBusy: 'History operation in progress; related actions are disabled',
   // Attachment sheet
   attachSheetPhoto: 'Camera',
   attachSheetAlbum: 'Photos',

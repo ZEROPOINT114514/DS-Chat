@@ -231,6 +231,9 @@ const readEntryOffset = async (file: File, entry: Entry, boundary: number) => {
 export type ArchiveEntry = {
   path: string
   size: number
+  /** 该条目在归档里的序号与总数，用于导入进度 */
+  index: number
+  total: number
   stream: AsyncIterable<Uint8Array>
 }
 
@@ -240,6 +243,7 @@ export type ArchiveEntry = {
  */
 export async function* readArchive(file: File): AsyncGenerator<ArchiveEntry> {
   const directory = await readDirectory(file)
+  const total = directory.entries.length
   for (const [index, entry] of directory.entries.entries()) {
     const boundary = directory.entries[index + 1]?.offset ?? directory.offset
     const start = await readEntryOffset(file, entry, boundary)
@@ -291,7 +295,7 @@ export async function* readArchive(file: File): AsyncGenerator<ArchiveEntry> {
       }
       completed = true
     }
-    yield { path: entry.path, size: entry.size, stream: stream() }
+    yield { path: entry.path, size: entry.size, index, total, stream: stream() }
     if (!completed) {
       invalid()
     }

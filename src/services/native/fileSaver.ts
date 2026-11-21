@@ -32,7 +32,8 @@ const bytesToBase64 = (bytes: Uint8Array): string => {
 export const saveFileNatively = async (
   name: string,
   blob: Blob,
-  mime: string
+  mime: string,
+  onProgress?: (written: number, total: number) => void
 ): Promise<string | null> => {
   if (!Capacitor.isNativePlatform()) {
     return null
@@ -43,6 +44,7 @@ export const saveFileNatively = async (
     for (let offset = 0; offset < blob.size; offset += CHUNK_BYTES) {
       const buffer = await blob.slice(offset, offset + CHUNK_BYTES).arrayBuffer()
       await FileSaver.chunk({ token, data: bytesToBase64(new Uint8Array(buffer)) })
+      onProgress?.(Math.min(offset + CHUNK_BYTES, blob.size), blob.size)
     }
     const { path } = await FileSaver.finish({ token })
     return path

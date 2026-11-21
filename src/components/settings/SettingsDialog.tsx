@@ -30,6 +30,12 @@ import {
 } from '../../services/settings.js'
 import { useTranslate, type TranslationKey, type TranslationMessage } from '../../i18n/index.js'
 import { saveFileNatively } from '../../services/native/fileSaver.js'
+import {
+  finishHistoryTask,
+  startHistoryTask,
+  updateHistoryTask,
+  useHistoryTask,
+} from '../../services/chat/historyProgress.js'
 import { Button } from '../base/Button.js'
 import { Modal } from '../base/Modal.js'
 import { Select } from '../base/Select.js'
@@ -66,7 +72,9 @@ const SettingsContent = () => {
   const historyImport = useHistoryImport()
   const historyDelete = useHistoryDelete()
   const replacingHistory = useChatStore((state) => state.importingHistory)
-  const historyBusy = historyImport.busy || historyDelete.busy || replacingHistory
+  const historyTask = useHistoryTask((state) => state.task)
+  const historyBusy =
+    historyImport.busy || historyDelete.busy || replacingHistory || historyTask !== null
   return (
     <>
       <Modal
@@ -183,6 +191,7 @@ const useHistoryDelete = () => {
     }
     deleting.current = true
     setBusy(true)
+    startHistoryTask('delete')
     try {
       await clearHistory()
       setOpened(false)
@@ -190,6 +199,7 @@ const useHistoryDelete = () => {
     } catch {
       showToast({ key: 'historyDeleteFailed', type: 'error' })
     } finally {
+      finishHistoryTask()
       deleting.current = false
       setBusy(false)
     }
@@ -433,17 +443,33 @@ const errorStatus = (key: TranslationKey, error: unknown): Status => ({
   error: true,
 })
 
+/** 历史数据处理的进度条：百分比 + 明细（如 18 / 42） */
+const ProgressBar = ({ percent, detail }: { percent: number; detail?: string }) => (
+  <div className={styles.progress}>
+    <div className={styles.progressTrack}>
+      <div className={styles.progressFill} style={{ width: `${percent}%` }} />
+    </div>
+    <div className={styles.progressMeta}>
+      <span>{percent}%</span>
+      {detail ? <span>{detail}</span> : null}
+    </div>
+  </div>
+)
+
 const SettingCell = ({
   label,
   description,
   status,
   action,
+  extra,
   className,
 }: {
   label: string
   description?: string
   status: Status
   action: ReactNode
+  /** 状态行下方的附加内容，例如进度条 */
+  extra?: ReactNode
   className?: string
 }) => {
   const t = useTranslate()
@@ -458,6 +484,7 @@ const SettingCell = ({
               : description}
           </div>
         ) : null}
+        {extra}
       </div>
       {action}
     </div>
@@ -479,12 +506,16 @@ const useHistoryImport = () => {
     setFile(null)
     setBusy(true)
     setStatus(null)
+    startHistoryTask('import')
     try {
-      const count = await importHistory(file)
+      const count = await importHistory(file, (done, total) => {
+        updateHistoryTask(total > 0 ? (done / total) * 100 : 0, `${done} / ${total}`)
+      })
       setStatus({ key: count === 1 ? 'historyImportedOne' : 'historyImported', params: { count } })
     } catch {
       setStatus({ key: 'historyImportFailed', error: true })
     } finally {
+      finishHistoryTask()
       importing.current = false
       setBusy(false)
     }
@@ -502,6 +533,8 @@ const ImportHistory = ({
   disabled: boolean
 }) => {
   const t = useTranslate()
+  const task = useHistoryTask((state) => state.task)
+  const importingNow = task?.kind === 'import'
   const inputRef = useRef<HTMLInputElement>(null)
 
   return (
@@ -509,6 +542,7 @@ const ImportHistory = ({
       label={t('historyImport')}
       description={t('historyImportDescription')}
       status={historyImport.status}
+      extra={importingNow && task ? <ProgressBar percent={task.percent} detail={task.detail} /> : null}
       action={
         <>
           <Button
@@ -544,16 +578,23 @@ const ImportHistory = ({
 const ExportHistory = ({ disabled }: { disabled: boolean }) => {
   const t = useTranslate()
   const empty = useChatStore((state) => state.sessions.length === 0)
-  const [busy, setBusy] = useState(false)
+  const task = useHistoryTask((state) => state.task)
+  const exporting = task?.kind === 'export'
   const [status, setStatus] = useState<Status>(null)
 
   const onExport = async () => {
-    setBusy(true)
+    startHistoryTask('export')
     setStatus(null)
+    updateHistoryTask(0, t('historyProgressPreparing'))
     try {
-      const { name, blob } = await exportHistory()
-      // 安卓 WebView 没有下载管理器，a[download] 不会触发任何行为，改走原生保存
-      const savedPath = await saveFileNatively(name, blob, 'application/zip')
+      // 打包占 0~70%，写入文件占 70~100%
+      const { name, blob } = await exportHistory((done, total) => {
+        updateHistoryTask(total > 0 ? (done / total) * 70 : 0, `${done} / ${total}`)
+      })
+      updateHistoryTask(70, t('historyProgressWriting'))
+      const savedPath = await saveFileNatively(name, blob, 'application/zip', (written, total) => {
+        updateHistoryTask(70 + (total > 0 ? (written / total) * 30 : 30), t('historyProgressWriting'))
+      })
       if (savedPath) {
         setStatus({ key: 'historyExportSaved', params: { path: savedPath } })
         return
@@ -567,7 +608,7 @@ const ExportHistory = ({ disabled }: { disabled: boolean }) => {
     } catch (error) {
       setStatus(errorStatus('historyExportFailed', error))
     } finally {
-      setBusy(false)
+      finishHistoryTask()
     }
   }
 
@@ -576,12 +617,13 @@ const ExportHistory = ({ disabled }: { disabled: boolean }) => {
       label={t('exportAllLabel')}
       description={t('historyExportDescription')}
       status={status}
+      extra={exporting && task ? <ProgressBar percent={task.percent} detail={task.detail} /> : null}
       action={
         <Button
           variant="outlined"
           size="m"
           className={styles.cellButton}
-          disabled={disabled || busy || empty}
+          disabled={disabled || exporting || empty}
           onClick={() => void onExport()}
         >
           <IconDownloadOutline16 />

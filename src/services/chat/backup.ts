@@ -17,10 +17,13 @@ const enqueueBackup = <T>(run: () => Promise<T>): Promise<T> => {
 const backupFileName = (date: Date) => `deepseek_data-${formatDate(date)}.zip`
 
 /** 导出为历史会话导出格式的 ZIP，可再次导入。 */
-export const exportHistory = (): Promise<{ name: string; blob: Blob }> =>
+export const exportHistory = (
+  onProgress?: (done: number, total: number) => void
+): Promise<{ name: string; blob: Blob }> =>
   enqueueBackup(async () => {
     // 列表和已加载内容保留导出开始时的快照；未打开的会话逐条读取，不填满详情缓存。
     const { sessions, sessionCache } = useChatStore.getState()
+    let done = 0
     async function* readSessions(): AsyncGenerator<Session> {
       for (const summary of sessions) {
         const session = Object.hasOwn(sessionCache, summary.id)
@@ -31,6 +34,8 @@ export const exportHistory = (): Promise<{ name: string; blob: Blob }> =>
         }
         // 详情读取期间可能重命名，归档标题与开始时的列表保持一致。
         yield { ...session, ...summary }
+        done += 1
+        onProgress?.(done, sessions.length)
       }
     }
     const { exportArchive } = await import('./history/exportArchive.js')
@@ -43,11 +48,14 @@ export const exportHistory = (): Promise<{ name: string; blob: Blob }> =>
  * 确认覆盖后调用：先检查 ZIP 格式与版本，校验失败时保留正在生成的回答；
  * 通过后从 ZIP 流式写入暂存，成功才替换原有会话与图片原件。返回导入的会话数。
  */
-export const importHistory = (file: File): Promise<number> =>
+export const importHistory = (
+  file: File,
+  onProgress?: (done: number, total: number) => void
+): Promise<number> =>
   enqueueBackup(async () => {
     const { checkArchiveFormat, importArchive } = await import('./history/importArchive.js')
     await checkArchiveFormat(file)
-    return replaceHistory(() => importArchive(file))
+    return replaceHistory(() => importArchive(file, onProgress))
   })
 
 /** 确认删除后调用：以空历史原子替换全部本地会话与附件，保留 API Key 和其他设置。 */
