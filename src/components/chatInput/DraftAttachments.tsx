@@ -7,6 +7,7 @@ import { IconCloseFill14, IconRefreshOutline16 } from '../base/icons.js'
 import { Tooltip } from '../base/Tooltip.js'
 import { FileCard } from '../files/FileCard.js'
 import { useFileView } from '../files/useFileView.js'
+import { openImagePreviewItems } from '../../services/imagePreview.js'
 import styles from './ChatInput.module.css'
 
 const UPLOADING: UploadTask = { status: 'uploading' }
@@ -24,6 +25,10 @@ export const DraftAttachments = memo(function DraftAttachments({
   if (items.length === 0) {
     return null
   }
+  // 草稿里的图片用本地预览地址组成相册，点开走站内查看器，不再导航到原图
+  const gallery = items
+    .filter((item) => item.isImage && item.previewUrl)
+    .map((item) => ({ id: item.id, name: item.file.name, url: item.previewUrl as string }))
   return (
     <div className={styles.attachments}>
       {items.map((item) => (
@@ -32,6 +37,12 @@ export const DraftAttachments = memo(function DraftAttachments({
           item={item}
           onRetry={() => onRetry(item.id)}
           onRemove={() => onRemove(item.id)}
+          onPreview={() =>
+            openImagePreviewItems(
+              gallery,
+              gallery.findIndex((entry) => entry.id === item.id)
+            )
+          }
         />
       ))}
     </div>
@@ -43,10 +54,12 @@ const AttachmentItem = ({
   item,
   onRetry,
   onRemove,
+  onPreview,
 }: {
   item: DraftAttachment
   onRetry: () => void
   onRemove: () => void
+  onPreview: () => void
 }) => {
   const t = useTranslate()
   const { image, url, link } = useFileView(item.file, item.file.name)
@@ -65,7 +78,18 @@ const AttachmentItem = ({
       className={clsx(styles.attachment, failed && styles.attachmentFailed)}
       title={error ?? item.file.name}
     >
-      {link && status === 'done' ? <a {...link}>{preview}</a> : preview}
+      {url ? (
+        <button
+          type="button"
+          className={styles.attachmentOpen}
+          aria-label={item.file.name}
+          onClick={onPreview}
+        >
+          {preview}
+        </button>
+      ) : (
+        preview
+      )}
       {status === 'uploading' ? <div className={styles.uploading} /> : null}
       {failed && retry ? (
         <Tooltip content={retryLabel}>

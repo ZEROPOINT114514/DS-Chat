@@ -78,6 +78,20 @@ export const openImagePreview = async (fileId: string) => {
   useImagePreview.setState({ items, index: found < 0 ? 0 : found })
 }
 
+/**
+ * 用现成的地址打开预览（例如输入框里还没发送的草稿图片）。
+ * 这些地址由调用方持有，关闭时不会释放，避免草稿缩略图变成空白。
+ */
+export const openImagePreviewItems = (items: PreviewImage[], index: number) => {
+  if (items.length === 0) {
+    return
+  }
+  useImagePreview.setState({
+    items,
+    index: Math.min(Math.max(index, 0), items.length - 1),
+  })
+}
+
 export const setPreviewIndex = (index: number) =>
   useImagePreview.setState((state) => ({
     index: Math.min(Math.max(index, 0), Math.max(state.items.length - 1, 0)),
