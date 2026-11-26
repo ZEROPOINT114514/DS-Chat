@@ -5,10 +5,14 @@ DeepSeek 移动端客户端。界面按 DeepSeek 官方 Android App 重做，功
 
 ## 它是什么
 
-- **一个真的能用的 App**：安装包 `DS-Chat-1.3.1.apk`，Android 6.0+ 直接安装，不需要电脑、不需要浏览器。
+- **一个真的能用的 App**：安装包 `DS-Chat-1.3.2.apk`，Android 6.0+ 直接安装，不需要电脑、不需要浏览器。
 - **界面**：品牌蓝 `#4D6BFE`、鲸鱼标识、"我是 DeepSeek，很高兴见到你！"首页、气泡消息、输入卡片、
   深度思考 / 智能搜索胶囊按钮、顶栏 ☰ + 居中标题 + 新建对话，与官方 App 的移动端布局对齐。
 - **功能**：完整保留 chat-demo 的能力（见下），不是砍版。
+
+## 1.3.2 变更
+
+- **附件交互与官方 App 对齐**：输入框里待发送的图片和文件，右上角删除键**常显**（不再需要先点一下才出现），点图片/文件主体即打开——图片进站内查看器，文件调系统「打开方式」。原先「首点出 ×、再点才预览」的两步逻辑整体移除。
 
 ## 1.3.1 变更
 
@@ -62,7 +66,7 @@ DeepSeek 移动端客户端。界面按 DeepSeek 官方 Android App 重做，功
 ## 安装
 
 ```text
-adb install -r DS-Chat-1.3.1.apk
+adb install -r DS-Chat-1.3.2.apk
 ```
 
 或把 APK 传到手机点击安装（需允许"安装未知来源应用"）。
@@ -85,7 +89,7 @@ cd android
 $ANDROID_HOME/build-tools/34.0.0/zipalign -p 4 app-release-unsigned.apk aligned.apk
 $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
   --ks android/keystore/release.jks \
-  --out DS-Chat-1.3.1.apk aligned.apk
+  --out DS-Chat-1.3.2.apk aligned.apk
 ```
 
 签名密钥自己生成、自己保管，**不在仓库里**：

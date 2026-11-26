@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { memo, useEffect, useRef } from 'react'
+import { memo } from 'react'
 import { useTranslate } from '../../i18n/index.js'
 import {
   getOpenMimeType,
@@ -7,11 +7,6 @@ import {
   type UploadTask,
 } from '../../services/attachments.js'
 import type { DraftAttachment } from '../../services/chat/drafts.js'
-import {
-  setActiveDraftImage,
-  toggleActiveDraftImage,
-  useActiveDraftImage,
-} from '../../services/draftImageState.js'
 import { openImagePreviewItems } from '../../services/imagePreview.js'
 import { openFileWithSystem } from '../../services/native/fileOpener.js'
 import { showToast } from '../base/toastState.js'
@@ -85,23 +80,6 @@ const AttachmentItem = ({
   const showReason = failed && error !== undefined && error !== t('uploadFileStatusFailed')
   const preview = url ? <img src={url} alt={item.file.name} /> : null
 
-  // 第一次点缩略图只亮出右上角关闭键，再点画面才进查看器
-  const active = useActiveDraftImage((state) => state.id === item.id)
-  const shellRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!active) {
-      return
-    }
-    const onPointerDown = (event: PointerEvent) => {
-      const node = shellRef.current
-      if (node && !node.contains(event.target as Node)) {
-        setActiveDraftImage(null)
-      }
-    }
-    document.addEventListener('pointerdown', onPointerDown, true)
-    return () => document.removeEventListener('pointerdown', onPointerDown, true)
-  }, [active])
-
   const openCard = async () => {
     try {
       await openFileWithSystem(
@@ -122,12 +100,7 @@ const AttachmentItem = ({
 
   return renderable && url !== null ? (
     <div
-      ref={shellRef}
-      className={clsx(
-        styles.attachment,
-        active && styles.attachmentActive,
-        failed && styles.attachmentFailed
-      )}
+      className={clsx(styles.attachment, failed && styles.attachmentFailed)}
       title={error ?? item.file.name}
     >
       {url ? (
@@ -135,13 +108,7 @@ const AttachmentItem = ({
           type="button"
           className={styles.attachmentOpen}
           aria-label={item.file.name}
-          onClick={() => {
-            if (active) {
-              onPreview()
-            } else {
-              toggleActiveDraftImage(item.id)
-            }
-          }}
+          onClick={onPreview}
         >
           {preview}
         </button>
@@ -164,15 +131,9 @@ const AttachmentItem = ({
       ) : null}
       <button
         type="button"
-        className={clsx(
-          styles.remove,
-          (active || (failed && !retry)) && styles.removeVisible
-        )}
+        className={clsx(styles.remove, failed && !retry && styles.invalidRemove)}
         aria-label={t('imageCancelUpload')}
-        onClick={() => {
-          setActiveDraftImage(null)
-          onRemove()
-        }}
+        onClick={onRemove}
       >
         <IconCloseFill14 />
       </button>
