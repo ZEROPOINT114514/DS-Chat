@@ -25,6 +25,16 @@ const bytesToBase64 = (bytes: Uint8Array): string => {
   return btoa(binary)
 }
 
+/** 把整份 Blob 读成 base64（分块编码，避免超长参数） */
+export const readBlobBase64 = async (blob: Blob): Promise<string> => {
+  const parts: string[] = []
+  for (let offset = 0; offset < blob.size; offset += CHUNK_BYTES) {
+    const buffer = await blob.slice(offset, offset + CHUNK_BYTES).arrayBuffer()
+    parts.push(bytesToBase64(new Uint8Array(buffer)))
+  }
+  return parts.join('')
+}
+
 /**
  * 原生环境把文件写进系统下载目录并返回展示路径；浏览器返回 null，
  * 由调用方继续用 a[download] 触发下载。

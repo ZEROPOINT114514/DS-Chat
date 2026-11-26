@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(CameraPlugin.class);
         registerPlugin(RecentMediaPlugin.class);
         registerPlugin(ShareTargetPlugin.class);
+        registerPlugin(FileOpenerPlugin.class);
         super.onCreate(savedInstanceState);
         // 冷启动时可能是「其他应用打开」带进来的文件
         SharedContent.capture(this, getIntent());

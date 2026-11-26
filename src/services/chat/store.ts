@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { getAbortReason, throwIfAborted } from '../../utils/abort.js'
 import { createId } from '../../utils/id.js'
 import { ApiError, streamMessage } from '../api/client.js'
 import type { ChatModel, CreateMessageRequest } from '../api/types.js'
@@ -468,6 +469,23 @@ export const newChat = () => {
   }
 }
 
+/** 取消一张已发送图片：从消息里移除该附件，保留文字与其他附件 */
+export const removeMessageAttachment = (
+  sessionId: string,
+  messageId: string,
+  fileId: string
+) => {
+  updateSession(sessionId, (session) => ({
+    ...session,
+    messages: session.messages.map((message) =>
+      message.id === messageId && message.role === 'user'
+        ? { ...message, files: message.files.filter((file) => file.id !== fileId) }
+        : message
+    ),
+  }))
+  persist(sessionId)
+}
+
 /** 置顶 / 取消置顶：先改内存列表，再落库；多个会话一次处理（多选场景） */
 export const pinSessions = (ids: string[], pinned: boolean) => {
   if (ids.length === 0) {
@@ -878,7 +896,7 @@ const prepareFiles = async (sessionId: string, request: Request, signal: AbortSi
   const serverIds = new Map<string, string>()
   // 停止生成立即生效；上传本身不取消（输入框与其他消息可能共用同一任务），完成后照常写回 serverId
   const aborted = new Promise<never>((_, reject) => {
-    signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+    signal.addEventListener('abort', () => reject(getAbortReason(signal)), { once: true })
   })
   // 旧图片超限时先清除 ID，交给下方已有的附件补传流程。
   const files = [
@@ -910,7 +928,7 @@ const prepareFiles = async (sessionId: string, request: Request, signal: AbortSi
   }
 
   const pending = new Map<string, FileAttachment>()
-  for (const [user] of getContextRounds(request.history).toReversed()) {
+  for (const [user] of getContextRounds(request.history).reverse()) {
     for (const file of user.files) {
       if (!file.serverId && !serverIds.has(file.id) && !pending.has(file.id)) {
         pending.set(file.id, file)
@@ -918,7 +936,7 @@ const prepareFiles = async (sessionId: string, request: Request, signal: AbortSi
     }
   }
   for (const file of pending.values()) {
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     try {
       const serverId = await Promise.race([ensureServerId(apiKey, file), aborted])
       if (serverId) {
@@ -926,7 +944,7 @@ const prepareFiles = async (sessionId: string, request: Request, signal: AbortSi
         saveServerIds(sessionId, new Map([[file.id, serverId]]))
       }
     } catch {
-      signal.throwIfAborted()
+      throwIfAborted(signal)
     }
   }
 

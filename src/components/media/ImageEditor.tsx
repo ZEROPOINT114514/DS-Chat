@@ -230,10 +230,29 @@ export const ImageEditor = ({
       return
     }
     const dpr = window.devicePixelRatio || 1
+    const frame = layout()
+    // 没有裁剪框时只导出图片本身，避免把舞台的黑边一起带进新附件
+    const imageBounds = frame
+      ? {
+          w:
+            (rotation % 180 !== 0 ? frame.image.naturalHeight : frame.image.naturalWidth) *
+            frame.scale,
+          h:
+            (rotation % 180 !== 0 ? frame.image.naturalWidth : frame.image.naturalHeight) *
+            frame.scale,
+        }
+      : null
     const region =
       crop && crop.w > 8 && crop.h > 8
         ? { x: crop.x * dpr, y: crop.y * dpr, w: crop.w * dpr, h: crop.h * dpr }
-        : { x: 0, y: 0, w: canvas.width, h: canvas.height }
+        : imageBounds && frame
+          ? {
+              x: (frame.cx - imageBounds.w / 2) * dpr,
+              y: (frame.cy - imageBounds.h / 2) * dpr,
+              w: imageBounds.w * dpr,
+              h: imageBounds.h * dpr,
+            }
+          : { x: 0, y: 0, w: canvas.width, h: canvas.height }
     const output = document.createElement('canvas')
     output.width = Math.max(1, Math.round(region.w))
     output.height = Math.max(1, Math.round(region.h))

@@ -19,6 +19,7 @@ export const FileCard = ({
   onRetry,
   onRemove,
   link,
+  onOpen,
 }: {
   name: string
   size: number
@@ -27,6 +28,8 @@ export const FileCard = ({
   onRetry?: () => void
   onRemove?: () => void
   link?: AnchorHTMLAttributes<HTMLAnchorElement>
+  /** 点击卡片打开（消息里的文件交给系统选择打开方式） */
+  onOpen?: () => void
 }) => {
   const t = useTranslate()
   const ext = getExtension(name)
@@ -42,8 +45,10 @@ export const FileCard = ({
     }
     description = error ?? t('uploadFileStatusFailed')
   }
-  const onClick = status === 'error' ? onRetry : undefined
   const fileLink = status === 'done' ? link : undefined
+  // 失败只负责重试；正常态优先用链接（浏览器），否则交给 onOpen（原生打开方式）
+  const onClick =
+    status === 'error' ? onRetry : status === 'done' && !fileLink ? onOpen : undefined
   return (
     <div
       className={clsx(

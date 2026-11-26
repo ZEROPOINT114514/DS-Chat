@@ -1,11 +1,7 @@
 import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslate } from '../../i18n/index.js'
-import {
-  IconCloseOutline16,
-  IconCropOutline20,
-  IconDownloadOutline16,
-} from '../base/icons.js'
+import { IconCloseOutline16, IconCropOutline20 } from '../base/icons.js'
 import { showToast } from '../base/toastState.js'
 import {
   closeImagePreview,
@@ -13,46 +9,13 @@ import {
   setPreviewIndex,
   useImagePreview,
 } from '../../services/imagePreview.js'
-import { saveFileNatively } from '../../services/native/fileSaver.js'
+import { attachFileToDraft } from '../../services/chat/draftAttach.js'
 import { ImageEditor } from '../media/ImageEditor.js'
 import styles from './ImagePreview.module.css'
 
 const MAX_SCALE = 4
 const SWIPE_DISTANCE = 64
 
-const extensionOf = (name: string, type: string) => {
-  const ext = name.split('.').pop()?.toLowerCase()
-  if (ext && /^(png|jpe?g|webp|gif|bmp|heic)$/.test(ext)) {
-    return ext === 'jpeg' ? 'jpg' : ext
-  }
-  if (type.includes('png')) {
-    return 'png'
-  }
-  if (type.includes('webp')) {
-    return 'webp'
-  }
-  return 'jpg'
-}
-
-/** 保存到系统下载目录；浏览器环境退回 a[download] */
-const saveBlob = async (blob: Blob, name: string) => {
-  const path = await saveFileNatively(name, blob, blob.type || 'image/jpeg')
-  if (path) {
-    showToast({ key: 'imagePreviewSaved', params: { path } })
-    return
-  }
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = name
-  link.click()
-  setTimeout(() => URL.revokeObjectURL(url), 5000)
-}
-
-/**
- * 图片查看器：左右滑动切换、双指放大、裁剪与保存。
- * 编辑裁剪复用 ImageEditor 的裁剪框，结果直接落到系统下载目录。
- */
 export const ImagePreview = () => {
   const t = useTranslate()
   const { items, index } = useImagePreview()
@@ -166,21 +129,6 @@ export const ImagePreview = () => {
     setOffset({ x: 0, y: 0 })
   }
 
-  const saveCurrent = async () => {
-    try {
-      const response = await fetch(image.url)
-      const blob = await response.blob()
-      const name = `ds-chat-${Date.now()}.${extensionOf(image.name, blob.type)}`
-      await saveBlob(blob, name)
-    } catch (error) {
-      showToast({
-        key: 'imagePreviewSaveFailed',
-        params: { message: error instanceof Error ? error.message : String(error) },
-        type: 'error',
-      })
-    }
-  }
-
   const cropCurrent = async () => {
     try {
       const response = await fetch(image.url)
@@ -219,14 +167,6 @@ export const ImagePreview = () => {
           >
             <IconCropOutline20 />
           </button>
-          <button
-            type="button"
-            className={styles.iconButton}
-            aria-label={t('imagePreviewSave')}
-            onClick={() => void saveCurrent()}
-          >
-            <IconDownloadOutline16 />
-          </button>
         </div>
       </div>
 
@@ -264,12 +204,15 @@ export const ImagePreview = () => {
         <ImageEditor
           blob={editing}
           name={image.name}
-          mode="crop"
-          doneLabel={t('imagePreviewSave')}
+          doneLabel={t('imageEditorAttach')}
           onCancel={() => setEditing(null)}
           onDone={(file) => {
             setEditing(null)
-            void saveBlob(file, file.name)
+            // 处理结果作为新附件进入当前会话的输入框，不再写入本地相册/下载目录
+            if (attachFileToDraft(file)) {
+              closeImagePreview()
+              showToast({ key: 'imageAttached' })
+            }
           }}
         />
       ) : null}

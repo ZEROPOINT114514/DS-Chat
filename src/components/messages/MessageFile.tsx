@@ -1,10 +1,17 @@
 import clsx from 'clsx'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslate } from '../../i18n/index.js'
-import { useUploads } from '../../services/attachments.js'
+import { getFileViewType, useUploads } from '../../services/attachments.js'
 import { openImagePreview } from '../../services/imagePreview.js'
+import {
+  setActiveImage,
+  toggleActiveImage,
+  useActiveImage,
+} from '../../services/imageAttachmentState.js'
+import { openFileWithSystem } from '../../services/native/fileOpener.js'
 import type { FileAttachment } from '../../services/chat/types.js'
-import { IconPhotoErrorFill20, IconRefreshOutline16 } from '../base/icons.js'
+import { showToast } from '../base/toastState.js'
+import { IconCloseFill14, IconPhotoErrorFill20, IconRefreshOutline16 } from '../base/icons.js'
 import { Tooltip } from '../base/Tooltip.js'
 import { FileCard } from '../files/FileCard.js'
 import { useFileView } from '../files/useFileView.js'
@@ -29,16 +36,58 @@ const useUploadState = (file: FileAttachment) =>
 export const MessageFile = ({
   file,
   onRetry,
+  onRemove,
 }: {
   file: FileAttachment
   /** 本条消息补传失败且可重试时提供 */
   onRetry: (() => void) | null
+  /** 点关闭键时取消这张图片（从消息里移除） */
+  onRemove?: () => void
 }) => {
   const t = useTranslate()
   const view = useFileView(file.id, file.name)
   const url = view.url
-  // 只有栅格图片进站内预览；SVG 交给文件卡片下载，避免脚本在应用里执行
-  const previewable = view.image
+  // 栅格图与 SVG 都进站内预览：SVG 用 <img> 渲染，不会执行脚本
+  const viewType = getFileViewType(file.name)
+  const previewable = view.image || viewType === 'image/svg+xml'
+  const active = useActiveImage((state) => state.id === file.id)
+  const shellRef = useRef<HTMLDivElement>(null)
+
+  // 点图片以外的地方时收起关闭键
+  useEffect(() => {
+    if (!active) {
+      return
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      const node = shellRef.current
+      if (node && !node.contains(event.target as Node)) {
+        setActiveImage(null)
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+  }, [active])
+
+  /** 非图片附件：把原件交给系统的「打开方式」选择器 */
+  const openWithSystem = async () => {
+    if (!url) {
+      return
+    }
+    try {
+      const blob = await (await fetch(url)).blob()
+      await openFileWithSystem(
+        blob,
+        file.name,
+        viewType || file.mimeType || 'application/octet-stream'
+      )
+    } catch (error) {
+      showToast({
+        key: 'fileOpenFailed',
+        params: { message: error instanceof Error ? error.message : String(error) },
+        type: 'error',
+      })
+    }
+  }
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
   const upload = useUploadState(file)
   const uploading = upload?.status === 'uploading'
@@ -116,17 +165,39 @@ export const MessageFile = ({
       )
     }
 
-    // 正常态：点开站内预览遮罩；不再新开页面，避免 WebView 按原图尺寸铺开
+    // 正常态：第一次点击显示右上角关闭键，再点图片才进入预览，避免误触直接全屏
     return url ? (
-      <button
-        type="button"
-        className={clsx(styles.image, styles.imageThumb)}
-        title={file.name}
-        aria-label={file.name}
-        onClick={() => void openImagePreview(file.id)}
-      >
-        {preview}
-      </button>
+      <div ref={shellRef} className={styles.imageShell}>
+        <button
+          type="button"
+          className={clsx(styles.image, styles.imageThumb, active && styles.imageActive)}
+          title={file.name}
+          aria-label={file.name}
+          onClick={() => {
+            if (active) {
+              void openImagePreview(file.id)
+            } else {
+              toggleActiveImage(file.id)
+            }
+          }}
+        >
+          {preview}
+        </button>
+        {active ? (
+          <button
+            type="button"
+            className={styles.imageRemove}
+            aria-label={t('imageCancelUpload')}
+            onClick={(event) => {
+              event.stopPropagation()
+              setActiveImage(null)
+              onRemove?.()
+            }}
+          >
+            <IconCloseFill14 />
+          </button>
+        ) : null}
+      </div>
     ) : (
       // 原件还没加载出来（极短暂）
       <div className={styles.image} />
@@ -140,7 +211,7 @@ export const MessageFile = ({
       status={uploading ? 'uploading' : failed ? 'error' : 'done'}
       error={errorText}
       onRetry={retry ?? undefined}
-      link={url && !upload ? view.link : undefined}
+      onOpen={url && !upload ? () => void openWithSystem() : undefined}
     />
   )
 }
