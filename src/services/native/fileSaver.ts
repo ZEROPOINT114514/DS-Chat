@@ -13,7 +13,7 @@ type FileSaverPlugin = {
 
 const FileSaver = registerPlugin<FileSaverPlugin>('FileSaver')
 
-/** 单次写入 512KB，避免把整份导出内容拼成一个巨大的字符串 */
+/** 单次写入 512KB，避免把整份内容拼成一个巨大的字符串 */
 const CHUNK_BYTES = 512 * 1024
 
 const bytesToBase64 = (bytes: Uint8Array): string => {
@@ -25,14 +25,15 @@ const bytesToBase64 = (bytes: Uint8Array): string => {
   return btoa(binary)
 }
 
-/** 把整份 Blob 读成 base64（分块编码，避免超长参数） */
-export const readBlobBase64 = async (blob: Blob): Promise<string> => {
-  const parts: string[] = []
+/**
+ * 按固定大小切片逐块编码：每块都是独立合法的 base64，
+ * 原生侧可以逐块解码后顺序写进同一个文件，不用先拼成几十 MB 的字符串。
+ */
+export async function* blobBase64Chunks(blob: Blob): AsyncGenerator<string> {
   for (let offset = 0; offset < blob.size; offset += CHUNK_BYTES) {
     const buffer = await blob.slice(offset, offset + CHUNK_BYTES).arrayBuffer()
-    parts.push(bytesToBase64(new Uint8Array(buffer)))
+    yield bytesToBase64(new Uint8Array(buffer))
   }
-  return parts.join('')
 }
 
 /**
@@ -50,11 +51,12 @@ export const saveFileNatively = async (
   }
 
   const { token } = await FileSaver.begin({ name, mime })
+  let written = 0
   try {
-    for (let offset = 0; offset < blob.size; offset += CHUNK_BYTES) {
-      const buffer = await blob.slice(offset, offset + CHUNK_BYTES).arrayBuffer()
-      await FileSaver.chunk({ token, data: bytesToBase64(new Uint8Array(buffer)) })
-      onProgress?.(Math.min(offset + CHUNK_BYTES, blob.size), blob.size)
+    for await (const data of blobBase64Chunks(blob)) {
+      await FileSaver.chunk({ token, data })
+      written = Math.min(written + CHUNK_BYTES, blob.size)
+      onProgress?.(written, blob.size)
     }
     const { path } = await FileSaver.finish({ token })
     return path

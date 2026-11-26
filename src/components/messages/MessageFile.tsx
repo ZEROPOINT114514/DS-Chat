@@ -1,17 +1,13 @@
 import clsx from 'clsx'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useTranslate } from '../../i18n/index.js'
-import { getFileViewType, useUploads } from '../../services/attachments.js'
+import { getOpenMimeType, useUploads } from '../../services/attachments.js'
+import { loadFile } from '../../services/chat/db.js'
 import { openImagePreview } from '../../services/imagePreview.js'
-import {
-  setActiveImage,
-  toggleActiveImage,
-  useActiveImage,
-} from '../../services/imageAttachmentState.js'
 import { openFileWithSystem } from '../../services/native/fileOpener.js'
 import type { FileAttachment } from '../../services/chat/types.js'
 import { showToast } from '../base/toastState.js'
-import { IconCloseFill14, IconPhotoErrorFill20, IconRefreshOutline16 } from '../base/icons.js'
+import { IconPhotoErrorFill20, IconRefreshOutline16 } from '../base/icons.js'
 import { Tooltip } from '../base/Tooltip.js'
 import { FileCard } from '../files/FileCard.js'
 import { useFileView } from '../files/useFileView.js'
@@ -29,57 +25,32 @@ const useUploadState = (file: FileAttachment) =>
 
 /**
  * 消息里的附件：
- * - 图片：纯图片显示 120×120 缩略图，与文件混排时为 64×64；上传中显示 loading 蒙层，
- *   上传失败显示品牌色描边 + 中心重试图标（可重试）或 photo-error 图标（不可重试）。
- * - 文件：显示文件卡片。
+ * - 图片：纯图片显示 120×120 缩略图，与文件混排时为 64×64；点击直接进站内查看器，
+ *   上传中显示 loading 蒙层，上传失败显示品牌色描边 + 中心重试图标（可重试）或 photo-error 图标（不可重试）。
+ * - 文件：显示文件卡片，点击交给系统的「打开方式」选择器。
  */
 export const MessageFile = ({
   file,
   onRetry,
-  onRemove,
 }: {
   file: FileAttachment
   /** 本条消息补传失败且可重试时提供 */
   onRetry: (() => void) | null
-  /** 点关闭键时取消这张图片（从消息里移除） */
-  onRemove?: () => void
 }) => {
   const t = useTranslate()
   const view = useFileView(file.id, file.name)
   const url = view.url
-  // 栅格图与 SVG 都进站内预览：SVG 用 <img> 渲染，不会执行脚本
-  const viewType = getFileViewType(file.name)
-  const previewable = view.image || viewType === 'image/svg+xml'
-  const active = useActiveImage((state) => state.id === file.id)
-  const shellRef = useRef<HTMLDivElement>(null)
-
-  // 点图片以外的地方时收起关闭键
-  useEffect(() => {
-    if (!active) {
-      return
-    }
-    const onPointerDown = (event: PointerEvent) => {
-      const node = shellRef.current
-      if (node && !node.contains(event.target as Node)) {
-        setActiveImage(null)
-      }
-    }
-    document.addEventListener('pointerdown', onPointerDown, true)
-    return () => document.removeEventListener('pointerdown', onPointerDown, true)
-  }, [active])
+  // 栅格图与 SVG 都进站内预览（SVG 用 <img> 渲染，不执行脚本）；TIFF / HEIC 交给系统应用
+  const previewable = view.renderable
 
   /** 非图片附件：把原件交给系统的「打开方式」选择器 */
   const openWithSystem = async () => {
-    if (!url) {
-      return
-    }
     try {
-      const blob = await (await fetch(url)).blob()
-      await openFileWithSystem(
-        blob,
-        file.name,
-        viewType || file.mimeType || 'application/octet-stream'
-      )
+      const blob = await loadFile(file.id)
+      if (!blob) {
+        return
+      }
+      await openFileWithSystem(blob, file.name, getOpenMimeType(file.name, file.mimeType))
     } catch (error) {
       showToast({
         key: 'fileOpenFailed',
@@ -165,39 +136,17 @@ export const MessageFile = ({
       )
     }
 
-    // 正常态：第一次点击显示右上角关闭键，再点图片才进入预览，避免误触直接全屏
+    // 正常态（已发送）：点击直接进站内查看器
     return url ? (
-      <div ref={shellRef} className={styles.imageShell}>
-        <button
-          type="button"
-          className={clsx(styles.image, styles.imageThumb, active && styles.imageActive)}
-          title={file.name}
-          aria-label={file.name}
-          onClick={() => {
-            if (active) {
-              void openImagePreview(file.id)
-            } else {
-              toggleActiveImage(file.id)
-            }
-          }}
-        >
-          {preview}
-        </button>
-        {active ? (
-          <button
-            type="button"
-            className={styles.imageRemove}
-            aria-label={t('imageCancelUpload')}
-            onClick={(event) => {
-              event.stopPropagation()
-              setActiveImage(null)
-              onRemove?.()
-            }}
-          >
-            <IconCloseFill14 />
-          </button>
-        ) : null}
-      </div>
+      <button
+        type="button"
+        className={clsx(styles.image, styles.imageThumb)}
+        title={file.name}
+        aria-label={file.name}
+        onClick={() => void openImagePreview(file.id)}
+      >
+        {preview}
+      </button>
     ) : (
       // 原件还没加载出来（极短暂）
       <div className={styles.image} />

@@ -1,13 +1,24 @@
 import clsx from 'clsx'
-import { memo } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import { useTranslate } from '../../i18n/index.js'
-import { useUploads, type UploadTask } from '../../services/attachments.js'
+import {
+  getOpenMimeType,
+  useUploads,
+  type UploadTask,
+} from '../../services/attachments.js'
 import type { DraftAttachment } from '../../services/chat/drafts.js'
+import {
+  setActiveDraftImage,
+  toggleActiveDraftImage,
+  useActiveDraftImage,
+} from '../../services/draftImageState.js'
+import { openImagePreviewItems } from '../../services/imagePreview.js'
+import { openFileWithSystem } from '../../services/native/fileOpener.js'
+import { showToast } from '../base/toastState.js'
 import { IconCloseFill14, IconRefreshOutline16 } from '../base/icons.js'
 import { Tooltip } from '../base/Tooltip.js'
 import { FileCard } from '../files/FileCard.js'
 import { useFileView } from '../files/useFileView.js'
-import { openImagePreviewItems } from '../../services/imagePreview.js'
 import styles from './ChatInput.module.css'
 
 const UPLOADING: UploadTask = { status: 'uploading' }
@@ -62,7 +73,7 @@ const AttachmentItem = ({
   onPreview: () => void
 }) => {
   const t = useTranslate()
-  const { image, url, link } = useFileView(item.file, item.file.name)
+  const { renderable, url } = useFileView(item.file, item.file.name)
   const task = useUploads((state) => state.tasks[item.id] ?? UPLOADING)
   const status = task.status
   const error = task.status === 'error' ? t(task.error.key, task.error.params) : undefined
@@ -73,9 +84,50 @@ const AttachmentItem = ({
   // 「上传失败」只显示重试图标，其余原因写在图片上：可重试时在图标下方，不可重试时贴底
   const showReason = failed && error !== undefined && error !== t('uploadFileStatusFailed')
   const preview = url ? <img src={url} alt={item.file.name} /> : null
-  return image && url !== null ? (
+
+  // 第一次点缩略图只亮出右上角关闭键，再点画面才进查看器
+  const active = useActiveDraftImage((state) => state.id === item.id)
+  const shellRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!active) {
+      return
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      const node = shellRef.current
+      if (node && !node.contains(event.target as Node)) {
+        setActiveDraftImage(null)
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+  }, [active])
+
+  const openCard = async () => {
+    try {
+      await openFileWithSystem(
+        item.file,
+        item.file.name,
+        getOpenMimeType(item.file.name, item.file.type)
+      )
+    } catch (openError) {
+      showToast({
+        key: 'fileOpenFailed',
+        params: {
+          message: openError instanceof Error ? openError.message : String(openError),
+        },
+        type: 'error',
+      })
+    }
+  }
+
+  return renderable && url !== null ? (
     <div
-      className={clsx(styles.attachment, failed && styles.attachmentFailed)}
+      ref={shellRef}
+      className={clsx(
+        styles.attachment,
+        active && styles.attachmentActive,
+        failed && styles.attachmentFailed
+      )}
       title={error ?? item.file.name}
     >
       {url ? (
@@ -83,7 +135,13 @@ const AttachmentItem = ({
           type="button"
           className={styles.attachmentOpen}
           aria-label={item.file.name}
-          onClick={onPreview}
+          onClick={() => {
+            if (active) {
+              onPreview()
+            } else {
+              toggleActiveDraftImage(item.id)
+            }
+          }}
         >
           {preview}
         </button>
@@ -106,9 +164,15 @@ const AttachmentItem = ({
       ) : null}
       <button
         type="button"
-        className={clsx(styles.remove, failed && !retry && styles.invalidRemove)}
-        aria-label={t('delete')}
-        onClick={onRemove}
+        className={clsx(
+          styles.remove,
+          (active || (failed && !retry)) && styles.removeVisible
+        )}
+        aria-label={t('imageCancelUpload')}
+        onClick={() => {
+          setActiveDraftImage(null)
+          onRemove()
+        }}
       >
         <IconCloseFill14 />
       </button>
@@ -118,10 +182,10 @@ const AttachmentItem = ({
       name={item.file.name}
       size={item.file.size}
       status={status}
-      link={link}
       error={error}
       onRetry={retry}
       onRemove={onRemove}
+      onOpen={() => void openCard()}
     />
   )
 }

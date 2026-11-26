@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getFileViewType, isImage } from '../../services/attachments.js'
+import { getFileViewType, isImage, isRenderableImage } from '../../services/attachments.js'
 import { loadFile } from '../../services/chat/db.js'
 
 const createViewUrl = (original: Blob, type: string) => {
@@ -43,7 +43,9 @@ export const useFileView = (source: File | string, name: string) => {
 
   const url = state?.source === source && state.type === type ? state.url : undefined
   const image = isImage(type)
+  // 只有 WebView 真能渲染的格式才进站内查看器
+  const renderable = isRenderableImage(type)
   const openInTab = type === 'application/pdf' || (image && type !== 'image/svg+xml')
   const action = openInTab ? { target: '_blank', rel: 'noreferrer' } : { download: name }
-  return { url, image, link: url ? { href: url, ...action } : undefined }
+  return { url, image, renderable, link: url ? { href: url, ...action } : undefined }
 }

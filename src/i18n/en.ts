@@ -181,7 +181,7 @@ export const en = {
   settingsLocaleZhCN: 'Simplified Chinese',
   settingsLocaleEnUS: 'English',
   sendHint: 'Send (Ctrl + Enter)',
-  imageCancelUpload: 'Remove this image',
+  imageCancelUpload: 'Cancel this upload',
   fileOpenFailed: 'Cannot open file: {message}',
   imageEditorAttach: 'Insert into composer',
   imageAttached: 'Inserted into the composer',

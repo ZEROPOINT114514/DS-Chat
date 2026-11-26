@@ -469,23 +469,6 @@ export const newChat = () => {
   }
 }
 
-/** 取消一张已发送图片：从消息里移除该附件，保留文字与其他附件 */
-export const removeMessageAttachment = (
-  sessionId: string,
-  messageId: string,
-  fileId: string
-) => {
-  updateSession(sessionId, (session) => ({
-    ...session,
-    messages: session.messages.map((message) =>
-      message.id === messageId && message.role === 'user'
-        ? { ...message, files: message.files.filter((file) => file.id !== fileId) }
-        : message
-    ),
-  }))
-  persist(sessionId)
-}
-
 /** 置顶 / 取消置顶：先改内存列表，再落库；多个会话一次处理（多选场景） */
 export const pinSessions = (ids: string[], pinned: boolean) => {
   if (ids.length === 0) {

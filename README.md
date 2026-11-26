@@ -5,10 +5,16 @@ DeepSeek 移动端客户端。界面按 DeepSeek 官方 Android App 重做，功
 
 ## 它是什么
 
-- **一个真的能用的 App**：安装包 `DS-Chat-1.3.0.apk`，Android 6.0+ 直接安装，不需要电脑、不需要浏览器。
+- **一个真的能用的 App**：安装包 `DS-Chat-1.3.1.apk`，Android 6.0+ 直接安装，不需要电脑、不需要浏览器。
 - **界面**：品牌蓝 `#4D6BFE`、鲸鱼标识、"我是 DeepSeek，很高兴见到你！"首页、气泡消息、输入卡片、
   深度思考 / 智能搜索胶囊按钮、顶栏 ☰ + 居中标题 + 新建对话，与官方 App 的移动端布局对齐。
 - **功能**：完整保留 chat-demo 的能力（见下），不是砍版。
+
+## 1.3.1 变更
+
+- **修复大文件打不开**：`FileOpener` 原先要求整份文件拼成一个 base64 字符串，Web 侧按 512KB 切片后每块自带的填充符拼在一起就不是合法 base64，超过 512KB 的文件（docx / pptx / xlsx 等）一律报「文件数据解析失败」。改为 `begin → chunk → finish` 分块写缓存，逐块解码；实测 3.9MB docx 8 块、字节数与原始文件完全一致。
+- **补齐文档 MIME**：按 Files API 支持的格式补了 doc / docx / ppt / pptx / xls / xlsx / csv / txt / md / json / xml / html / epub / mobi / rtf 及常见代码后缀，系统「打开方式」里能正确匹配应用；TIFF、HEIC 这类 WebView 画不出来的图片也改为交系统应用打开。
+- **图片交互回归到需求**：已发送的图片恢复「单击直接进查看器」，不再有点 ×「撤回」的入口；两步交互移到**输入框里的待发送图片**上——第一次点缩略图亮出右上角关闭键并加蓝色描边，再点画面才进查看器，点关闭键取消这张待上传图片（同时取消上传任务）。
 
 ## 1.3.0 变更
 
@@ -56,7 +62,7 @@ DeepSeek 移动端客户端。界面按 DeepSeek 官方 Android App 重做，功
 ## 安装
 
 ```text
-adb install -r DS-Chat-1.3.0.apk
+adb install -r DS-Chat-1.3.1.apk
 ```
 
 或把 APK 传到手机点击安装（需允许"安装未知来源应用"）。
@@ -79,7 +85,7 @@ cd android
 $ANDROID_HOME/build-tools/34.0.0/zipalign -p 4 app-release-unsigned.apk aligned.apk
 $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
   --ks android/keystore/release.jks \
-  --out DS-Chat-1.3.0.apk aligned.apk
+  --out DS-Chat-1.3.1.apk aligned.apk
 ```
 
 签名密钥自己生成、自己保管，**不在仓库里**：

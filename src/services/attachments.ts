@@ -274,6 +274,67 @@ export const getFileViewType = (name: string) => {
   return Object.hasOwn(VIEW_MIME_BY_EXT, ext) ? VIEW_MIME_BY_EXT[ext] : ''
 }
 
+/**
+ * 交系统打开时用的 MIME：覆盖 Files API 支持的全部文档、表格、电子书与纯文本格式。
+ * 缺这一层时 docx / pptx / xlsx 只能退成 application/octet-stream，
+ * 系统选择器里常常一个能打开它们的应用都不出现。
+ */
+const OPEN_MIME_BY_EXT: Record<string, string> = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  csv: 'text/csv',
+  txt: 'text/plain',
+  md: 'text/markdown',
+  markdown: 'text/markdown',
+  json: 'application/json',
+  xml: 'application/xml',
+  html: 'text/html',
+  htm: 'text/html',
+  epub: 'application/epub+zip',
+  mobi: 'application/x-mobipocket-ebook',
+  azw3: 'application/vnd.amazon.ebook',
+  rtf: 'application/rtf',
+  log: 'text/plain',
+  ini: 'text/plain',
+  toml: 'text/plain',
+  yaml: 'text/yaml',
+  yml: 'text/yaml',
+  sql: 'application/sql',
+  py: 'text/x-python',
+  java: 'text/x-java-source',
+  c: 'text/x-c',
+  h: 'text/x-c',
+  cpp: 'text/x-c++',
+  js: 'text/javascript',
+  ts: 'text/plain',
+  go: 'text/plain',
+  rs: 'text/plain',
+  sh: 'application/x-sh',
+}
+
+/** WebView 能直接画出来的图片类型；TIFF、HEIC 这类交给系统应用打开 */
+const RENDERABLE_IMAGES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'image/avif',
+  'image/svg+xml',
+  'image/x-icon',
+])
+
+export const isRenderableImage = (mimeType: string) => RENDERABLE_IMAGES.has(mimeType)
+
+/** 打开附件用的 MIME：先按后缀，缺失时退回附件自身记录的 MIME */
+export const getOpenMimeType = (name: string, fallback = '') =>
+  OPEN_MIME_BY_EXT[getFileExt(name)] || fallback || 'application/octet-stream'
+
 /** 取文件的 MIME：优先用浏览器给出的类型，缺失时按扩展名推断 */
 export const resolveMimeType = (file: File) => file.type || MIME_BY_EXT[getFileExt(file.name)] || ''
 

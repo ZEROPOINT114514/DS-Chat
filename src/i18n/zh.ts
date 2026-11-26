@@ -172,7 +172,7 @@ export const zh = {
   settingsLocaleZhCN: '简体中文',
   settingsLocaleEnUS: 'English',
   sendHint: '发送（Ctrl + Enter）',
-  imageCancelUpload: '取消该图片',
+  imageCancelUpload: '取消上传该图片',
   fileOpenFailed: '无法打开文件：{message}',
   imageEditorAttach: '插入输入框',
   imageAttached: '已插入输入框，可作为新消息发送',
